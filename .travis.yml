@@ -28,7 +28,6 @@ script:
       cd /io
 
       for PYBIN in /opt/python/*/bin; do
-        "${PYBIN}/pip" install -r dev-requirements.txt
         "${PYBIN}/pip" wheel . -w wheelhouse/
       done
 
