@@ -2,7 +2,8 @@ notifications:
   email: false
 
 env:
-  PACKAGE_NAME: pyinstrument_cext
+  global:
+    PACKAGE_NAME: pyinstrument_cext
 
 matrix:
   include:
@@ -21,7 +22,7 @@ install:
 
 script:
   - |
-    echo '
+    docker run --rm -i -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /bin/bash << 'EOF'
       set -o errexit
       set -o xtrace
       cd /io
@@ -40,5 +41,5 @@ script:
         "${PYBIN}/pip" install pyinstrument_cext --no-index -f ./wheelhouse
         (cd "$HOME"; "${PYBIN}/nosetests" pyinstrument_cext)
       done
-    ' | docker run --rm -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /bin/bash
+    EOF
   - ls wheelhouse/
