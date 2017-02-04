@@ -37,8 +37,9 @@ script:
 
       # Install packages and test
       for PYBIN in /opt/python/*/bin/; do
+        "${PYBIN}/pip" install nose
         "${PYBIN}/pip" install pyinstrument_cext --no-index -f ./wheelhouse
-        (cd "$HOME"; "${PYBIN}/nosetests" pyinstrument_cext)
+        (cd "$HOME"; "${PYBIN}/nosetests" /io/pyinstrument_cext/tests)
       done
     EOF
   - ls wheelhouse/
