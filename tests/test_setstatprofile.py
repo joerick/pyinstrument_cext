@@ -17,8 +17,6 @@ class TestSetstatprofile(TestCase):
         self.count = 0
 
     def profile_callback(self, frame, event, arg):
-        # print frame, event, arg
-        print frame.f_code.co_name
         self.count += 1
 
     def test100ms(self):
@@ -33,5 +31,3 @@ class TestSetstatprofile(TestCase):
         busy_wait(1.0)
         setstatprofile(None)
         self.assertTrue(98 < self.count < 102)
-        self.fail(self.count)
-
