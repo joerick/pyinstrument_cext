@@ -39,7 +39,7 @@ script:
       for PYBIN in /opt/python/*/bin/; do
         "${PYBIN}/pip" install nose
         "${PYBIN}/pip" install pyinstrument_cext --no-index -f ./wheelhouse
-        (cd "$HOME"; "${PYBIN}/nosetests" /io/tests)
+        (cd "$HOME" && "${PYBIN}/nosetests" /io/tests)
       done
     EOF
   - ls wheelhouse/
@@ -50,6 +50,6 @@ deploy:
   api_key:
     secure: rgYG7fciihMO5MdhvSFvQ/scwVD9x6thRZHedD/YCiZgtYbzt4ILWD8QRpgb9IdVj3pDTOkMOdFeF74G4XMf2j7r4hoLWxH/6ONL1JWRBeRsSeBBhVd9sKindGkqiBhWi5ZI/qVOTnNiXp6lK+taiOebZ/1gbqDslhgPr03o0rDNyJfSZEyh8Rm/B0E1Zvm9ajDh/NxDCQplWTobyuRAAPycsXGxupCjAtyQy4gQYbkwK18vzG3BlWgCVSXwY5Ok+CtqD2cXCS1yNYPXtAjyN9qKXXSZBo4xfz2VKiE1kWBeXIHmks2oX+SI4NFYWvZhK0NivxrWTblNYix8jl+Xv1Ggs1okoyaI2A1mbwwagm2RyPNdjjf1pi5WhFOcyhCaOhWIueIZBSVwnbfY6u3YTtF39HMVH86fkd+3BRdqI+4xLBO4e1IJsebPCE0Uj57HtNdqEIqLTs1y7KHxmIkMgmM+aE6fm7tVlDZIj87xE6ztF7k6CF28dYyFqKXbzDu/SA5LrwmyHjdSeLfALmQxI1w9YVURstn1xXx1eofU+6n5tunEcqEkwWSCh5J7Y4ypPV70u9DzupA9rcXOp0cotfZMzxbQB3q/pn2rHSkJ23Mu7aZ72WRjzCFxHX+Z02hiLEPdwACYtpBep+o77eLVlVBcTYDXiirN1Rw9cfLxSaA=
   file_glob: true
-  file: wheelhouse/*.whl
+  file: wheelhouse/*manylinux*.whl
   on:
     tags: true
