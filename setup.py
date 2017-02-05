@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages, Extension
+import sys
 
 setup(
     name="pyinstrument_cext",

@@ -32,8 +32,7 @@ floatclock(void)
         if (!QueryPerformanceFrequency(&freq) || freq.QuadPart == 0) {
             /* Unlikely to happen - this works on all intel
                machines at least!  Revert to clock() */
-            return PyFloat_FromDouble(((double)clock()) /
-                                      CLOCKS_PER_SEC);
+            return ((double)clock()) / CLOCKS_PER_SEC;
         }
         divisor = (double)freq.QuadPart;
     }
@@ -135,6 +134,7 @@ profile(PyObject *m, PyFrameObject *frame, int what, PyObject *arg)
 {
     double now = floatclock();
     struct module_state *mState = GETSTATE(m);
+    PyObject *result;
 
     if (now < mState->last_invocation + mState->interval) {
         return 0;
@@ -142,7 +142,7 @@ profile(PyObject *m, PyFrameObject *frame, int what, PyObject *arg)
         mState->last_invocation = now;
     }
 
-    PyObject *result = call_target(m, frame, what, arg);
+    result = call_target(m, frame, what, arg);
 
     if (result == NULL) {
         PyEval_SetProfile(NULL, NULL);
@@ -160,7 +160,8 @@ setstatprofile(PyObject *m, PyObject *args, PyObject *kwds)
     struct module_state *mState = GETSTATE(m);
     double interval = 0.0;
     PyObject *target = NULL;
-
+    PyObject *tmp;
+    
     if (! PyArg_ParseTupleAndKeywords(args, kwds, "O|d", kwlist, &target, &interval))
         return NULL;
 
@@ -172,7 +173,7 @@ setstatprofile(PyObject *m, PyObject *args, PyObject *kwds)
         return NULL;
     }
 
-    PyObject *tmp = mState->target;
+    tmp = mState->target;
     Py_XINCREF(target);
     mState->target = target;
     Py_XDECREF(tmp);
