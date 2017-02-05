@@ -39,7 +39,7 @@ script:
       for PYBIN in /opt/python/*/bin/; do
         "${PYBIN}/pip" install nose
         "${PYBIN}/pip" install pyinstrument_cext --no-index -f ./wheelhouse
-        (cd "$HOME"; "${PYBIN}/nosetests" /io/pyinstrument_cext/tests)
+        (cd "$HOME"; "${PYBIN}/nosetests" /io/tests)
       done
     EOF
   - ls wheelhouse/
