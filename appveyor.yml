@@ -39,17 +39,17 @@ install:
 
 build_script:
   # Build the wheel
-  - "%PYTHON%/Python.exe -m pip wheel . -w C:\\wheelhouse"
+  - "%PYTHON%/Python.exe -m pip wheel . -w wheelhouse"
 
 test_script:
   # Run the tests using the package installed from wheel
   - "%PYTHON%/Python.exe -m pip install nose"
-  - "%PYTHON%/Python.exe -m pip install pyinstrument_cext --no-index -f C:\\wheelhouse"
+  - "%PYTHON%/Python.exe -m pip install pyinstrument_cext --no-index -f wheelhouse"
   - cd C:\
   - "%PYTHON%/Scripts/nosetests %APPVEYOR_BUILD_FOLDER%\\tests"
 
 artifacts:
-  - path: "C:\\wheelhouse"
+  - path: "wheelhouse\\*.whl"
     name: Wheels
 
 deploy:
