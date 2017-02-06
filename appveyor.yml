@@ -42,12 +42,12 @@ install:
 
 build_script:
   # Build the wheel
-  - "%CMD_IN_ENV% python -m pip wheel . -w wheelhouse"
+  - "%CMD_IN_ENV% %PYTHON%/Python.exe -m pip wheel . -w wheelhouse"
 
 test_script:
   # Run the tests using the package installed from wheel
   - "%PYTHON%/Python.exe -m pip install nose"
-  - "%PYTHON%/Python.exe -m pip install pyinstrument_cext --no-index -f wheelhouse"
+  - "%CMD_IN_ENV% %PYTHON%/Python.exe -m pip install pyinstrument_cext --no-index -f wheelhouse"
   - cd C:\
   - "%PYTHON%/Scripts/nosetests %APPVEYOR_BUILD_FOLDER%\\tests"
 
