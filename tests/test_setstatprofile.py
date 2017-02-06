@@ -31,5 +31,5 @@ class TestSetstatprofile(TestCase):
         setstatprofile(self.profile_callback, 0.01)
         busy_wait(1.0)
         setstatprofile(None)
-        self.assertTrue(98 < self.count < 102,
+        self.assertTrue(95 < self.count < 105,
                         'profile count should be approx. 100, was %i' % self.count)

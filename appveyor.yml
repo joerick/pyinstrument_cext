@@ -39,7 +39,7 @@ install:
 
 build_script:
   # Build the wheel
-  - "%PYTHON%/Python.exe -m pip wheel . -w wheelhouse"
+  - "%CMD_IN_ENV% %PYTHON%/Python.exe -m pip wheel . -w wheelhouse"
 
 test_script:
   # Run the tests using the package installed from wheel
