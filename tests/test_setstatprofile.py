@@ -24,10 +24,12 @@ class TestSetstatprofile(TestCase):
         busy_wait(1.0)
         setstatprofile(None)
         # check that the profiling calls were throttled appropriately
-        self.assertTrue(8 < self.count < 12)
+        self.assertTrue(8 < self.count < 12,
+                        'profile count should be approx. 10, was %i' % self.count)
 
     def test10ms(self):
         setstatprofile(self.profile_callback, 0.01)
         busy_wait(1.0)
         setstatprofile(None)
-        self.assertTrue(98 < self.count < 102)
+        self.assertTrue(98 < self.count < 102,
+                        'profile count should be approx. 100, was %i' % self.count)
