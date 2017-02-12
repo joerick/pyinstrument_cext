@@ -4,6 +4,7 @@ notifications:
 env:
   global:
     PACKAGE_NAME: pyinstrument_cext
+    S3_BUCKET: pythonwheelhouse
 
 matrix:
   include:
@@ -43,6 +44,8 @@ script:
       done
     EOF
   - ls wheelhouse/
+  - pip install wheelhouse_uploader certifi
+  - wheelhouse_uploader upload --provider-name=S3_EU_WEST --local-folder wheelhouse $S3_BUCKET
 
 deploy:
   provider: releases
