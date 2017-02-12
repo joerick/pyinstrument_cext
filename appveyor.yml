@@ -5,6 +5,7 @@ environment:
     # See: http://stackoverflow.com/a/13751649/163740
     # See: 
     CMD_IN_ENV: "cmd /E:ON /V:ON /C C:\\appveyor_run_with_env.cmd"
+    S3_BUCKET: pythonwheelhouse
 
   matrix:
     - PYTHON: C:\Python27
@@ -71,6 +72,10 @@ test_script:
   - "%CMD_IN_ENV% %PYTHON%/Python.exe -m pip install pyinstrument_cext --no-index -f wheelhouse"
   - cd C:\
   - "%PYTHON%/Scripts/nosetests %APPVEYOR_BUILD_FOLDER%\\tests"
+
+after_test:
+  - "%PYTHON%/Python.exe -m pip install wheelhouse-uploader"
+  - "%PYTHON%/Python.exe -m wheelhouse_uploader upload --provider-name=S3 --local-folder wheelhouse %S3_BUCKET%"
 
 artifacts:
   - path: "wheelhouse\\*.whl"
