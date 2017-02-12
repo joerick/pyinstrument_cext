@@ -45,7 +45,7 @@ script:
     EOF
   - ls wheelhouse/
   - pip install wheelhouse_uploader certifi
-  - wheelhouse_uploader upload --provider-name=S3_EU_WEST --local-folder wheelhouse $S3_BUCKET
+  - python -m wheelhouse_uploader upload --provider-name=S3_EU_WEST --local-folder wheelhouse $S3_BUCKET
 
 deploy:
   provider: releases
