@@ -74,7 +74,7 @@ test_script:
   - "%PYTHON%/Scripts/nosetests %APPVEYOR_BUILD_FOLDER%\\tests"
 
 after_test:
-  - "%PYTHON%/Python.exe -m pip install wheelhouse-uploader certifi"
+  - "%PYTHON%/Python.exe -m pip install https://github.com/joerick/wheelhouse-uploader/archive/master.zip certifi"
   - "%PYTHON%/Python.exe -m wheelhouse_uploader upload --provider-name=S3_EU_WEST --local-folder %APPVEYOR_BUILD_FOLDER%\\wheelhouse %S3_BUCKET%"
 
 artifacts:
