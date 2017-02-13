@@ -17,32 +17,50 @@ matrix:
         - docker
       env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686
            PRE_CMD=linux32
-
-install:
-  - docker pull $DOCKER_IMAGE
+    - os: osx
 
 script:
   - |
-    docker run --rm -i -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /bin/bash << 'EOF'
-      set -o errexit
-      set -o xtrace
-      cd /io
-
-      for PYBIN in /opt/python/*/bin; do
-        "${PYBIN}/pip" wheel . -w wheelhouse/
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      sudo brew install python3
+      sudo pip install delocate
+      
+      for PYTHON in /usr/bin/python2.7 /usr/local/bin/python?.?; do
+        ${PYTHON} -m pip install -U pip
+        ${PYTHON} -m pip wheel . -w wheelhouse/
       done
 
-      for whl in wheelhouse/*.whl; do
-        auditwheel repair "$whl" -w wheelhouse
-      done
+      delocate-listdeps wheelhouse/*.whl # lists library dependencies
+      delocate-wheel wheelhouse/*.whl # copies library dependencies into wheel
 
-      # Install packages and test
-      for PYBIN in /opt/python/*/bin/; do
-        "${PYBIN}/pip" install nose
-        "${PYBIN}/pip" install pyinstrument_cext --no-index -f ./wheelhouse
-        (cd "$HOME" && "${PYBIN}/nosetests" /io/tests)
+      for PYTHON in /usr/bin/python2.7 /usr/local/bin/python?.?; do
+        ${PYTHON} -m pip install nose
+        ${PYTHON} -m pip install pyinstrument_cext --no-index -f ./wheelhouse
+        (cd "$HOME" && ${PYTHON} -m nose ${TRAVIS_BUILD_DIR}/tests)
       done
-    EOF
+    else
+      docker pull $DOCKER_IMAGE
+      docker run --rm -i -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /bin/bash << 'EOF'
+        set -o errexit
+        set -o xtrace
+        cd /io
+
+        for PYBIN in /opt/python/*/bin; do
+          "${PYBIN}/pip" wheel . -w wheelhouse/
+        done
+
+        for whl in wheelhouse/*.whl; do
+          auditwheel repair "$whl" -w wheelhouse
+        done
+
+        # Install packages and test
+        for PYBIN in /opt/python/*/bin/; do
+          "${PYBIN}/pip" install nose
+          "${PYBIN}/pip" install pyinstrument_cext --no-index -f ./wheelhouse
+          (cd "$HOME" && "${PYBIN}/nosetests" /io/tests)
+        done
+      EOF
+    fi
   - ls wheelhouse/
   - pip install https://github.com/joerick/libcloud/archive/v1.5.0-s3fix.zip wheelhouse_uploader certifi
   - python -m wheelhouse_uploader upload --provider-name=S3_EU_WEST --local-folder wheelhouse $S3_BUCKET
