@@ -95,7 +95,7 @@ matrix:
         - MB_PYTHON_VERSION=3.6
 
 before_install:
-    - (cd $HOME && curl --location "$MULTIBUILD_TARBALL_URL" | tar -xzvf -)
+    - (mkdir -p ~/multibuild && cd ~/multibuild && curl --location "$MULTIBUILD_TARBALL_URL" | tar -xzvf - --strip 1)
     - source ~/multibuild/common_utils.sh
     - source ~/multibuild/travis_steps.sh
     - before_install
