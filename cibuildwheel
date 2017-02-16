@@ -81,11 +81,11 @@ def win_build(package_name, output_dir, test_command, test_requires):
             request = urllib2.urlopen('https://github.com/ogrisel/python-appveyor-demo/raw/09a1c8672e5015a74d8f69d07add6ee803c176ec/appveyor/run_with_env.cmd')
             f.write(request.read())
 
-    def shell(args, env=None):
+    def shell(args, env=None, cwd=None):
         # print the command executing for the logs
         print('+ ' + ' '.join(args))
         args = ['cmd', '/E:ON', '/V:ON', '/C', run_with_env] + args
-        return subprocess.check_call(' '.join(args), env=env)
+        return subprocess.check_call(' '.join(args), env=env, cwd=cwd)
 
     PythonConfiguration = namedtuple('PythonConfigurations', ['version', 'arch', 'path'])
     python_configurations = [
