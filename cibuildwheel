@@ -52,8 +52,8 @@ def linux_build(package_name, output_dir, test_command, test_requires):
             done
         '''.format(
             package_name=package_name,
-            test_requires=test_requires.join(' '),
-            test_command=shlex.quote(test_command.format(project='/repo') if test_command else ''),
+            test_requires=' '.join(test_requires),
+            test_command=shlex_quote(test_command.format(project='/repo') if test_command else ''),
         )
 
         docker_process = subprocess.Popen([
@@ -83,7 +83,7 @@ def win_build(package_name, output_dir, test_command, test_requires):
 
     def shell(args, env=None):
         # print the command executing for the logs
-        print('+ ' + args.join(' '))
+        print('+ ' + ' '.join(args))
         args = ['cmd', '/E:ON', '/V:ON', '/C', run_with_env] + args
         return subprocess.check_call(args, env=env)
 
@@ -163,7 +163,6 @@ def main():
                               'CIBW_TEST_REQUIRES'))
 
     args = parser.parse_args()
-    print(args)
 
     try:
         package_name = subprocess.check_output([sys.executable, 'setup.py', '--name'])
@@ -184,8 +183,6 @@ def main():
     test_command = args.test_command
     test_requires = args.test_requires.split()
 
-    print(package_name, output_dir, test_command, test_requires)
-    return
     if args.platform == 'linux':
         linux_build(
             package_name=package_name,
