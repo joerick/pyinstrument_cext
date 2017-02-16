@@ -1,0 +1,203 @@
+from __future__ import print_function
+import argparse, os, subprocess, sys, tempfile
+from StringIO import StringIO
+from collections import namedtuple
+
+try:
+    # Python 3
+    import urllib.request as urllib2
+except ImportError:
+    # Python 2
+    import urllib2
+
+try:
+    from shlex import quote as shlex_quote
+except ImportError:
+    from pipes import quote as shlex_quote
+
+
+def linux_build(package_name, output_dir, test_command, test_requires):
+    for docker_image in ['quay.io/pypa/manylinux1_x86_64', 'quay.io/pypa/manylinux1_i686']:
+        repo = os.path.abspath('.')
+        this_script_dir, this_script = os.path.split(os.path.abspath(__file__))
+        output_dir = os.path.abspath(output_dir)
+
+        bash_script = '''
+            set -o errexit
+            set -o xtrace
+            cd /repo
+
+            for PYBIN in /opt/python/*/bin; do
+                "$PYBIN/pip" wheel . -w /tmp/linux_wheels
+            done
+
+            for whl in /tmp/linux_wheels/*.whl; do
+                auditwheel repair "$whl" -w /output
+            done
+
+            # Install packages and test
+            for PYBIN in /opt/python/*/bin/; do
+                # Install the wheel we just built
+                "$PYBIN/pip" install {package_name} --no-index -f /output
+
+                # Install any requirements to run the tests
+                if [ ! -z "{test_requires}"]; then
+                    "$PYBIN/pip" install {test_requires}
+                fi
+
+                # Run the tests from a different directory
+                if [ ! -z {test_command} ]; then
+                    (cd "$HOME" && export PATH=$PYBIN:$PATH && sh -c {test_command})
+                fi
+            done
+        '''.format(
+            package_name=package_name,
+            test_requires=test_requires.join(' '),
+            test_command=shlex.quote(test_command.format(project='/repo') if test_command else ''),
+        )
+
+        docker_process = subprocess.Popen([
+                'docker',
+                'run',
+                '--rm',
+                '-i',
+                '-v', '%s:/repo' % repo,
+                '-v', '%s:/output' % output_dir,
+                '-v', '%s:/script' % this_script_dir,
+                docker_image,
+                '/bin/bash'],
+            stdin=subprocess.PIPE)
+
+        docker_process.communicate(bash_script)
+
+        if docker_process.returncode != 0:
+            exit(1)
+
+def win_build(package_name, output_dir, test_command, test_requires):
+    # run_with_env is a cmd file that sets the right environment variables to
+    run_with_env = os.path.join(tempfile.gettempdir(), 'appveyor_run_with_env.cmd')
+    if not os.path.exists(run_with_env):
+        with open(run_with_env, 'wb') as f:
+            request = urllib2.open('https://github.com/ogrisel/python-appveyor-demo/raw/09a1c8672e5015a74d8f69d07add6ee803c176ec/appveyor/run_with_env.cmd')
+            f.write(request.read())
+
+    def shell(args, env=None):
+        # print the command executing for the logs
+        print '+ ' + args.join(' ')
+        args = ['cmd', '/E:ON', '/V:ON', '/C', run_with_env] + args
+        return subprocess.check_call(args, env=env)
+
+    PythonConfiguration = namedtuple('PythonConfigurations', ['version', 'arch', 'path'])
+    python_configurations = [
+        PythonConfiguration(version='2.7.x', arch="32", path='C:\Python27'),
+        PythonConfiguration(version='2.7.x', arch="64", path='C:\Python27-x64'),
+        PythonConfiguration(version='3.3.x', arch="32", path='C:\Python33'),
+        PythonConfiguration(version='3.3.x', arch="64", path='C:\Python33-x64'),
+        PythonConfiguration(version='3.4.x', arch="32", path='C:\Python34'),
+        PythonConfiguration(version='3.4.x', arch="64", path='C:\Python34-x64'),
+        PythonConfiguration(version='3.5.x', arch="32", path='C:\Python35'),
+        PythonConfiguration(version='3.5.x', arch="64", path='C:\Python35-x64'),
+        PythonConfiguration(version='3.6.x', arch="32", path='C:\Python36'),
+        PythonConfiguration(version='3.6.x', arch="64", path='C:\Python36-x64'),
+    ]
+
+    for config in python_configurations:
+        env = os.environ.copy()
+        # set up environment variables for run_with_env
+        env['PYTHON_VERSION'] = config.version
+        env['PYTHON_ARCH'] = config.arch
+        env['PATH'] = os.pathsep.join([
+            config.path,
+            os.path.join(config.path, 'Scripts'),
+            env['PATH']
+        ])
+
+        # for the logs - check we're running the right version of python
+        shell(['python', '--version'], env=env)
+        shell(['python', '-c', '"import struct; print(struct.calcsize(\'P\') * 8)\"'], env=env)
+
+        # prepare the Python environment
+        shell(['pip', 'install', '--disable-pip-version-check', '--user', '--upgrade', 'pip'], env=env)
+        shell(['pip', 'install', 'wheel'], env=env)
+
+        # build the wheel
+        shell(['pip', 'wheel', '.', '-w', output_dir], env=env)
+
+        # install the wheel
+        shell(['pip', 'install', package_name, '--no-index', '-f', output_dir], env=env)
+
+        # test the wheel
+        if test_requires:
+            shell(['pip', 'install'] + test_requires, env=env)
+        if test_command:
+            # run the tests from c:\, with an absolute path in the command
+            # (this ensures that Python runs the tests against the installed wheel
+            # and not the repo code)
+            project_dir = os.path.abspath('.')
+            test_command_absolute = test_command.format(project=project_dir)
+            shell([test_command_absolute], cwd='c:\\', env=env)
+
+def main():
+    parser = argparse.ArgumentParser(description='Build wheels for all the platforms.')
+    parser.add_argument('platform',
+                        choices=['linux', 'osx', 'win'],
+                        help=('Platform to build for. For "linux" you need docker running, on Mac '
+                              'or Linux. For "osx", you need a Mac machine, and note that this '
+                              'script is going to automatically install MacPython on your system, '
+                              'so don\'t run on your development machine. For "win", you need to '
+                              'run in Windows, and it will build and test for all versions of '
+                              'Python at C:\\PythonXX[-x64].'))
+    parser.add_argument('--output-dir',
+                        default=os.environ.get('CIBW_OUTPUT_DIR', 'wheelhouse'),
+                        help='Destination folder for the wheels. Env: CIBW_OUTPUT_DIR')
+    parser.add_argument('--test-command',
+                        default=os.environ.get('CIBW_TEST_COMMAND', None),
+                        help=('Shell command to run the tests. The project root should be included '
+                              'in the command as "{project}". The package will be installed '
+                              'automatically and available for import from the tests. '
+                              'e.g. "nosetests {project}/tests". Env: CIBW_TEST_COMMAND'))
+    parser.add_argument('--test-requires',
+                        default=os.environ.get('CIBW_TEST_REQUIRES', ''),
+                        help=('Space-separated list of dependencies required for running the '
+                              'tests. e.g. "pytest" or "nose==1.3.7 moto==0.4.31" Env: '
+                              'CIBW_TEST_REQUIRES'))
+
+    args = parser.parse_args()
+    print(args)
+
+    try:
+        package_name = subprocess.check_output([sys.executable, 'setup.py', '--name'])
+    except subprocess.CalledProcessError as err:
+        if not os.path.exists('setup.py'):
+            print('cibuildwheel: Could not find setup.py at root of project', file=sys.stderr)
+            exit(2)
+        else:
+            print('cibuildwheel: Failed to get name of the package. Command was %s' % err.cmd)
+            exit(2)
+
+    package_name = package_name.strip()
+
+    if package_name == '' or package_name == 'UNKNOWN':
+        print('cibuildwheel: Invalid package name "%s". Check your setup.py' % package_name)
+
+    output_dir = args.output_dir
+    test_command = args.test_command
+    test_requires = args.test_requires.split()
+
+    print(package_name, output_dir, test_command, test_requires)
+    return
+    if args.platform == 'linux':
+        linux_build(
+            package_name=package_name,
+            output_dir=output_dir,
+            test_command=test_command,
+            test_requires=test_requires
+        )
+    else args.platform == 'win';
+
+    else:
+        print('cibuildwheel: Unsupported platform %s' % args.platform, file=sys.stderr)
+        exit(1)
+
+if __name__ == '__main__':
+    main()

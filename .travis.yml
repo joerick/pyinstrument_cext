@@ -3,7 +3,8 @@ notifications:
 
 env:
   global:
-    PACKAGE_NAME: pyinstrument_cext
+    CIBW_TEST_REQUIRES: nose
+    CIBW_TEST_COMMAND: "nosetests {project}/tests"
     S3_BUCKET: pythonwheelhouse
 
 matrix:
@@ -11,66 +12,15 @@ matrix:
     - sudo: required
       services:
         - docker
-      env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64
-    - sudo: required
-      services:
-        - docker
-      env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686
-           PRE_CMD=linux32
     - os: osx
 
 script:
   - |
     if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      sudo brew install python3
-      sudo pip install delocate
-      
-      for PYTHON in /usr/bin/python2.7 /usr/local/bin/python?.?; do
-        ${PYTHON} -m pip install -U pip
-        ${PYTHON} -m pip wheel . -w wheelhouse/
-      done
-
-      delocate-listdeps wheelhouse/*.whl # lists library dependencies
-      delocate-wheel wheelhouse/*.whl # copies library dependencies into wheel
-
-      for PYTHON in /usr/bin/python2.7 /usr/local/bin/python?.?; do
-        ${PYTHON} -m pip install nose
-        ${PYTHON} -m pip install pyinstrument_cext --no-index -f ./wheelhouse
-        (cd "$HOME" && ${PYTHON} -m nose ${TRAVIS_BUILD_DIR}/tests)
-      done
+      python cibuildwheel osx --output-dir wheelhouse
     else
-      docker pull $DOCKER_IMAGE
-      docker run --rm -i -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /bin/bash << 'EOF'
-        set -o errexit
-        set -o xtrace
-        cd /io
-
-        for PYBIN in /opt/python/*/bin; do
-          "${PYBIN}/pip" wheel . -w wheelhouse/
-        done
-
-        for whl in wheelhouse/*.whl; do
-          auditwheel repair "$whl" -w wheelhouse
-        done
-
-        # Install packages and test
-        for PYBIN in /opt/python/*/bin/; do
-          "${PYBIN}/pip" install nose
-          "${PYBIN}/pip" install pyinstrument_cext --no-index -f ./wheelhouse
-          (cd "$HOME" && "${PYBIN}/nosetests" /io/tests)
-        done
-    EOF
+      python cibuildwheel linux --output-dir wheelhouse
     fi
   - ls wheelhouse/
   - pip install https://github.com/joerick/libcloud/archive/v1.5.0-s3fix.zip wheelhouse_uploader certifi
   - python -m wheelhouse_uploader upload --provider-name=S3_EU_WEST --local-folder wheelhouse $S3_BUCKET
-
-deploy:
-  provider: releases
-  skip_cleanup: true
-  api_key:
-    secure: rgYG7fciihMO5MdhvSFvQ/scwVD9x6thRZHedD/YCiZgtYbzt4ILWD8QRpgb9IdVj3pDTOkMOdFeF74G4XMf2j7r4hoLWxH/6ONL1JWRBeRsSeBBhVd9sKindGkqiBhWi5ZI/qVOTnNiXp6lK+taiOebZ/1gbqDslhgPr03o0rDNyJfSZEyh8Rm/B0E1Zvm9ajDh/NxDCQplWTobyuRAAPycsXGxupCjAtyQy4gQYbkwK18vzG3BlWgCVSXwY5Ok+CtqD2cXCS1yNYPXtAjyN9qKXXSZBo4xfz2VKiE1kWBeXIHmks2oX+SI4NFYWvZhK0NivxrWTblNYix8jl+Xv1Ggs1okoyaI2A1mbwwagm2RyPNdjjf1pi5WhFOcyhCaOhWIueIZBSVwnbfY6u3YTtF39HMVH86fkd+3BRdqI+4xLBO4e1IJsebPCE0Uj57HtNdqEIqLTs1y7KHxmIkMgmM+aE6fm7tVlDZIj87xE6ztF7k6CF28dYyFqKXbzDu/SA5LrwmyHjdSeLfALmQxI1w9YVURstn1xXx1eofU+6n5tunEcqEkwWSCh5J7Y4ypPV70u9DzupA9rcXOp0cotfZMzxbQB3q/pn2rHSkJ23Mu7aZ72WRjzCFxHX+Z02hiLEPdwACYtpBep+o77eLVlVBcTYDXiirN1Rw9cfLxSaA=
-  file_glob: true
-  file: wheelhouse/*manylinux*.whl
-  on:
-    tags: true
