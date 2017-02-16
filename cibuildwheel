@@ -193,8 +193,13 @@ def main():
             test_command=test_command,
             test_requires=test_requires
         )
-    else args.platform == 'win';
-
+    elif args.platform == 'win':
+        win_build(
+            package_name=package_name,
+            output_dir=output_dir,
+            test_command=test_command,
+            test_requires=test_requires
+        )
     else:
         print('cibuildwheel: Unsupported platform %s' % args.platform, file=sys.stderr)
         exit(1)
