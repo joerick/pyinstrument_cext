@@ -41,7 +41,7 @@ def linux_build(package_name, output_dir, test_command, test_requires):
                 "$PYBIN/pip" install {package_name} --no-index -f /output
 
                 # Install any requirements to run the tests
-                if [ ! -z "{test_requires}"]; then
+                if [ ! -z "{test_requires}" ]; then
                     "$PYBIN/pip" install {test_requires}
                 fi
 
