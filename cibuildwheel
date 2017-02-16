@@ -78,7 +78,7 @@ def win_build(package_name, output_dir, test_command, test_requires):
     run_with_env = os.path.join(tempfile.gettempdir(), 'appveyor_run_with_env.cmd')
     if not os.path.exists(run_with_env):
         with open(run_with_env, 'wb') as f:
-            request = urllib2.open('https://github.com/ogrisel/python-appveyor-demo/raw/09a1c8672e5015a74d8f69d07add6ee803c176ec/appveyor/run_with_env.cmd')
+            request = urllib2.urlopen('https://github.com/ogrisel/python-appveyor-demo/raw/09a1c8672e5015a74d8f69d07add6ee803c176ec/appveyor/run_with_env.cmd')
             f.write(request.read())
 
     def shell(args, env=None):
