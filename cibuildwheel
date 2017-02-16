@@ -85,7 +85,7 @@ def win_build(package_name, output_dir, test_command, test_requires):
         # print the command executing for the logs
         print('+ ' + ' '.join(args))
         args = ['cmd', '/E:ON', '/V:ON', '/C', run_with_env] + args
-        return subprocess.check_call(args, env=env)
+        return subprocess.check_call(' '.join(args), env=env)
 
     PythonConfiguration = namedtuple('PythonConfigurations', ['version', 'arch', 'path'])
     python_configurations = [
