@@ -83,7 +83,7 @@ def win_build(package_name, output_dir, test_command, test_requires):
 
     def shell(args, env=None):
         # print the command executing for the logs
-        print '+ ' + args.join(' ')
+        print('+ ' + args.join(' '))
         args = ['cmd', '/E:ON', '/V:ON', '/C', run_with_env] + args
         return subprocess.check_call(args, env=env)
 
