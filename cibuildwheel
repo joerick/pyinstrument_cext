@@ -167,10 +167,12 @@ def macos_build(package_name, output_dir, test_command, test_requires):
         ])
 
         # check what version we're on
+        shell(['which', 'python'], env=env)
         shell(['python', '--version'], env=env)
 
         # install pip & wheel
         shell(['python', '-m', 'ensurepip', '--upgrade'], env=env)
+        shell(['which', 'pip'], env=env)
         shell(['pip', 'install', 'wheel'], env=env)
 
         # build the wheel
@@ -181,7 +183,7 @@ def macos_build(package_name, output_dir, test_command, test_requires):
 
         # test the wheel
         if test_requires:
-            shell(['pip', 'install'] + test_requires, env=env)
+            shell(['pip', '-v', 'install'] + test_requires, env=env)
         if test_command:
             # run the tests from /, with an absolute path in the command
             # (this ensures that Python runs the tests against the installed wheel
