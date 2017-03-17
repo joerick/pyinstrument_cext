@@ -1,5 +1,5 @@
 from __future__ import print_function
-import argparse, os, subprocess, sys, tempfile
+import argparse, os, subprocess, sys, tempfile, shlex
 from StringIO import StringIO
 from collections import namedtuple
 
@@ -190,7 +190,7 @@ def macos_build(package_name, output_dir, test_command, test_requires):
             # and not the repo code)
             project_dir = os.path.abspath('.')
             test_command_absolute = test_command.format(project=project_dir)
-            shell([test_command_absolute], cwd='/', env=env)
+            shell(shlex.split(test_command_absolute), cwd='/', env=env)
 
 
 def main():
