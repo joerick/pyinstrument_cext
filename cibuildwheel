@@ -73,6 +73,7 @@ def linux_build(package_name, output_dir, test_command, test_requires):
         if docker_process.returncode != 0:
             exit(1)
 
+
 def win_build(package_name, output_dir, test_command, test_requires):
     # run_with_env is a cmd file that sets the right environment variables to
     run_with_env = os.path.join(tempfile.gettempdir(), 'appveyor_run_with_env.cmd')
@@ -87,7 +88,7 @@ def win_build(package_name, output_dir, test_command, test_requires):
         args = ['cmd', '/E:ON', '/V:ON', '/C', run_with_env] + args
         return subprocess.check_call(' '.join(args), env=env, cwd=cwd)
 
-    PythonConfiguration = namedtuple('PythonConfigurations', ['version', 'arch', 'path'])
+    PythonConfiguration = namedtuple('PythonConfiguration', ['version', 'arch', 'path'])
     python_configurations = [
         PythonConfiguration(version='2.7.x', arch="32", path='C:\Python27'),
         PythonConfiguration(version='2.7.x', arch="64", path='C:\Python27-x64'),
@@ -137,12 +138,65 @@ def win_build(package_name, output_dir, test_command, test_requires):
             test_command_absolute = test_command.format(project=project_dir)
             shell([test_command_absolute], cwd='c:\\', env=env)
 
+
+def macos_build(package_name, output_dir, test_command, test_requires):
+    PythonConfiguration = namedtuple('PythonConfiguration', ['version', 'url'])
+    python_configurations = [
+        PythonConfiguration(version='2.7', url='https://www.python.org/ftp/python/2.7.13/python-2.7.13-macosx10.6.pkg'),
+        PythonConfiguration(version='3.4', url='https://www.python.org/ftp/python/3.4.4/python-3.4.4-macosx10.6.pkg'),
+        PythonConfiguration(version='3.5', url='https://www.python.org/ftp/python/3.5.3/python-3.5.3-macosx10.6.pkg'),
+        PythonConfiguration(version='3.6', url='https://www.python.org/ftp/python/3.6.0/python-3.6.0-macosx10.6.pkg'),
+    ]
+
+    def shell(args, env=None, cwd=None):
+        # print the command executing for the logs
+        print('+ ' + ' '.join(args))
+        return subprocess.check_call(args, env=env, cwd=cwd)
+
+    # install all our versions of Python
+    for config in python_configurations:
+        # download the pkg
+        shell(['curl', '-L', '-o', '/tmp/Python.pkg', config.url])
+        # install
+        shell(['sudo', 'installer', '-pkg', '/tmp/Python.pkg', '-target', '/'])
+
+        env = os.environ.copy()
+        env['PATH'] = os.pathsep.join([
+            '/Library/Frameworks/Python.framework/Versions/%s/bin' % config.version,
+            env['PATH'],
+        ])
+
+        # check what version we're on
+        shell(['python', '--version'], env=env)
+
+        # install pip & wheel
+        shell(['python', '-m', 'ensurepip', '--upgrade'], env=env)
+        shell(['pip', 'install', 'wheel'], env=env)
+
+        # build the wheel
+        shell(['pip', 'wheel', '.', '-w', output_dir], env=env)
+
+        # install the wheel
+        shell(['pip', 'install', package_name, '--no-index', '-f', output_dir], env=env)
+
+        # test the wheel
+        if test_requires:
+            shell(['pip', 'install'] + test_requires, env=env)
+        if test_command:
+            # run the tests from /, with an absolute path in the command
+            # (this ensures that Python runs the tests against the installed wheel
+            # and not the repo code)
+            project_dir = os.path.abspath('.')
+            test_command_absolute = test_command.format(project=project_dir)
+            shell([test_command_absolute], cwd='/', env=env)
+
+
 def main():
     parser = argparse.ArgumentParser(description='Build wheels for all the platforms.')
     parser.add_argument('platform',
-                        choices=['linux', 'osx', 'win'],
+                        choices=['linux', 'macos', 'win'],
                         help=('Platform to build for. For "linux" you need docker running, on Mac '
-                              'or Linux. For "osx", you need a Mac machine, and note that this '
+                              'or Linux. For "macos", you need a Mac machine, and note that this '
                               'script is going to automatically install MacPython on your system, '
                               'so don\'t run on your development machine. For "win", you need to '
                               'run in Windows, and it will build and test for all versions of '
@@ -192,6 +246,13 @@ def main():
         )
     elif args.platform == 'win':
         win_build(
+            package_name=package_name,
+            output_dir=output_dir,
+            test_command=test_command,
+            test_requires=test_requires
+        )
+    elif args.platform == 'macos':
+        macos_build(
             package_name=package_name,
             output_dir=output_dir,
             test_command=test_command,
