@@ -17,7 +17,7 @@ matrix:
 script:
   - |
     if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      python cibuildwheel osx --output-dir wheelhouse
+      python cibuildwheel macos --output-dir wheelhouse
     else
       python cibuildwheel linux --output-dir wheelhouse
     fi
