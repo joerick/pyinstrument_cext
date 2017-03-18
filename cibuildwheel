@@ -166,7 +166,7 @@ def macos_build(package_name, output_dir, test_command, test_requires):
             env['PATH'],
         ])
 
-        print 'env', env # todo: remove
+        print('env', env) # todo: remove
 
         shell(['find', '/Library/Frameworks/Python.framework'], env=env) # todo: remove
 
