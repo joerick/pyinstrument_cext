@@ -166,13 +166,17 @@ def macos_build(package_name, output_dir, test_command, test_requires):
             env['PATH'],
         ])
 
+        print 'env', env # todo: remove
+
+        shell(['find', '/Library/Frameworks/Python.framework'], env=env)
+
         # check what version we're on
         shell(['which', 'python'], env=env)
         shell(['python', '--version'], env=env)
 
         # install pip & wheel
         shell(['python', '-m', 'ensurepip', '--upgrade'], env=env)
-        shell(['which', 'pip'], env=env)
+        shell(['which', 'pip'], env=env)  # todo: remove
         shell(['pip', 'install', 'wheel'], env=env)
 
         # build the wheel
@@ -190,10 +194,10 @@ def macos_build(package_name, output_dir, test_command, test_requires):
             # and not the repo code)
             project_dir = os.path.abspath('.')
             test_command_absolute = test_command.format(project=project_dir)
-            shell(['which', 'nosetests'], env=env)
-            shell(['which', 'nosetests'], cwd=os.environ['HOME'], env=env)
-            shell(['nosetests', '-v'], env=env)
-            shell(['nosetests', '-v'], cwd=os.environ['HOME'], env=env)
+            shell(['which', 'nosetests'], env=env)  # todo: remove
+            shell(['which', 'nosetests'], cwd=os.environ['HOME'], env=env)  # todo: remove
+            shell(['nosetests', '-v'], env=env)  # todo: remove
+            shell(['nosetests', '-v'], cwd=os.environ['HOME'], env=env)  # todo: remove
             shell(shlex.split(test_command_absolute), cwd=os.environ['HOME'], env=env)
 
 
