@@ -168,7 +168,7 @@ def macos_build(package_name, output_dir, test_command, test_requires):
 
         print 'env', env # todo: remove
 
-        shell(['find', '/Library/Frameworks/Python.framework'], env=env)
+        shell(['find', '/Library/Frameworks/Python.framework'], env=env) # todo: remove
 
         # check what version we're on
         shell(['which', 'python'], env=env)
