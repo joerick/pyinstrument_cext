@@ -19,7 +19,6 @@ except ImportError:
 def linux_build(package_name, output_dir, test_command, test_requires):
     for docker_image in ['quay.io/pypa/manylinux1_x86_64', 'quay.io/pypa/manylinux1_i686']:
         repo = os.path.abspath('.')
-        this_script_dir, this_script = os.path.split(os.path.abspath(__file__))
         output_dir = os.path.abspath(output_dir)
 
         bash_script = '''
@@ -63,7 +62,6 @@ def linux_build(package_name, output_dir, test_command, test_requires):
                 '-i',
                 '-v', '%s:/repo' % repo,
                 '-v', '%s:/output' % output_dir,
-                '-v', '%s:/script' % this_script_dir,
                 docker_image,
                 '/bin/bash'],
             stdin=subprocess.PIPE)
