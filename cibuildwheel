@@ -153,7 +153,6 @@ def macos_build(package_name, output_dir, test_command, test_requires):
         print('+ ' + ' '.join(args))
         return subprocess.check_call(args, env=env, cwd=cwd)
 
-    # install all our versions of Python
     for config in python_configurations:
         # download the pkg
         shell(['curl', '-L', '-o', '/tmp/Python.pkg', config.url])
@@ -166,28 +165,28 @@ def macos_build(package_name, output_dir, test_command, test_requires):
             env['PATH'],
         ])
 
-        print('env', env) # todo: remove
-
-        shell(['find', '/Library/Frameworks/Python.framework'], env=env) # todo: remove
+        python = 'python3' if config.version[0] == '3' else 'python2'
+        pip = 'pip3' if config.version[0] == '3' else 'pip2'
 
         # check what version we're on
-        shell(['which', 'python'], env=env)
-        shell(['python', '--version'], env=env)
+        shell(['which', python], env=env)
+        shell([python, '--version'], env=env)
 
         # install pip & wheel
-        shell(['python', '-m', 'ensurepip', '--upgrade'], env=env)
-        shell(['which', 'pip'], env=env)  # todo: remove
-        shell(['pip', 'install', 'wheel'], env=env)
+        shell([python, '-m', 'ensurepip', '--upgrade'], env=env)
+        shell(['which', pip], env=env)  # todo: remove
+        shell([pip, '--version'])
+        shell([pip, 'install', 'wheel'], env=env)
 
         # build the wheel
-        shell(['pip', 'wheel', '.', '-w', output_dir], env=env)
+        shell([pip, 'wheel', '.', '-w', output_dir], env=env)
 
         # install the wheel
-        shell(['pip', 'install', package_name, '--no-index', '-f', output_dir], env=env)
+        shell([pip, 'install', package_name, '--no-index', '-f', output_dir], env=env)
 
         # test the wheel
         if test_requires:
-            shell(['pip', '-v', 'install'] + test_requires, env=env)
+            shell([pip, '-v', 'install'] + test_requires, env=env)
         if test_command:
             # run the tests from /, with an absolute path in the command
             # (this ensures that Python runs the tests against the installed wheel
