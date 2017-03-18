@@ -1,7 +1,7 @@
 from __future__ import print_function
 import argparse, os, subprocess, sys, tempfile, shlex
-from StringIO import StringIO
 from collections import namedtuple
+from glob import glob
 
 try:
     # Python 3
@@ -148,7 +148,7 @@ def macos_build(package_name, output_dir, test_command, test_requires):
 
     def shell(args, env=None, cwd=None):
         # print the command executing for the logs
-        print('+ ' + ' '.join(args))
+        print('+ ' + ' '.join(shlex_quote(a) for a in args))
         return subprocess.check_call(args, env=env, cwd=cwd)
 
     for config in python_configurations:
@@ -175,18 +175,26 @@ def macos_build(package_name, output_dir, test_command, test_requires):
         shell(['which', pip], env=env)  # todo: remove
         shell([pip, '--version'])
         shell([pip, 'install', 'wheel'], env=env)
+        shell([pip, 'install', 'delocate'], env=env)
 
-        # build the wheel
-        shell([pip, 'wheel', '.', '-w', output_dir], env=env)
+        # build the wheel to temp dir
+        temp_wheel_dir = '/tmp/tmpwheel%s' % config.version
+        shell([pip, 'wheel', '.', '-w', temp_wheel_dir], env=env)
+        temp_wheel = glob(temp_wheel_dir+'/*.whl')[0]
+
+        # list the dependencies
+        shell(['delocate-listdeps', temp_wheel], env=env)
+        # rebuild the wheel with shared libraries included and place in output dir
+        shell(['delocate-wheel', '-w', output_dir, temp_wheel], env=env)
 
         # install the wheel
-        shell([pip, 'install', package_name, '--no-index', '-f', output_dir], env=env)
+        shell([pip, 'install', package_name, '--no-index', '--find-links', output_dir], env=env)
 
         # test the wheel
         if test_requires:
             shell([pip, '-v', 'install'] + test_requires, env=env)
         if test_command:
-            # run the tests from /, with an absolute path in the command
+            # run the tests from $HOME, with an absolute path in the command
             # (this ensures that Python runs the tests against the installed wheel
             # and not the repo code)
             project_dir = os.path.abspath('.')
