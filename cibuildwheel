@@ -264,9 +264,9 @@ def main():
     if args.platform != 'auto':
         platform = args.platform
     else:
-        if os.environ['TRAVIS_OS_NAME'] == 'linux':
+        if os.environ.get('TRAVIS_OS_NAME') == 'linux':
             platform = 'linux'
-        elif os.environ['TRAVIS_OS_NAME'] == 'osx':
+        elif os.environ.get('TRAVIS_OS_NAME') == 'osx':
             platform = 'osx'
         elif 'APPVEYOR' in os.environ:
             platform = 'windows'
