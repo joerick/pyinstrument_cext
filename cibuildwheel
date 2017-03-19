@@ -211,6 +211,7 @@ def main():
 
     parser.add_argument('--platform',
                         choices=['auto', 'linux', 'macos', 'windows'],
+                        default='auto',
                         help=('Platform to build for. For "linux" you need docker running, on Mac '
                               'or Linux. For "macos", you need a Mac machine, and note that this '
                               'script is going to automatically install MacPython on your system, '
@@ -241,13 +242,15 @@ def main():
             print('cibuildwheel: Could not find setup.py at root of project', file=sys.stderr)
             exit(2)
         else:
-            print('cibuildwheel: Failed to get name of the package. Command was %s' % err.cmd)
+            print('cibuildwheel: Failed to get name of the package. Command was %s' % err.cmd,
+                  file=sys.stderr)
             exit(2)
 
     package_name = package_name.strip()
 
     if package_name == '' or package_name == 'UNKNOWN':
-        print('cibuildwheel: Invalid package name "%s". Check your setup.py' % package_name)
+        print('cibuildwheel: Invalid package name "%s". Check your setup.py' % package_name, 
+              file=sys.stderr)
         exit(2)
 
     build_args = dict(
@@ -258,14 +261,31 @@ def main():
         test_requires=test_requires
     )
 
-    if args.platform == 'linux':
+    if args.platform != 'auto':
+        platform = args.platform
+    else:
+        if os.environ['TRAVIS_OS_NAME'] == 'linux':
+            platform = 'linux'
+        elif os.environ['TRAVIS_OS_NAME'] == 'osx':
+            platform = 'osx'
+        elif 'APPVEYOR' in os.environ:
+            platform = 'windows'
+        else:
+            print('Unable to detect platform. cibuildwheel should run on your CI server, '
+                  'Travis CI and Appveyor are supported. You can run on your development '
+                  'machine using the --platform argument. Check --help output for more '
+                  'information.',
+                  file=sys.stderr)
+            exit(2)
+
+    if platform == 'linux':
         linux_build(**build_args)
-    elif args.platform == 'windows':
+    elif platform == 'windows':
         windows_build(**build_args)
-    elif args.platform == 'macos':
+    elif platform == 'macos':
         macos_build(**build_args)
     else:
-        print('cibuildwheel: Unsupported platform %s' % args.platform, file=sys.stderr)
+        print('cibuildwheel: Unsupported platform %s' % platform, file=sys.stderr)
         exit(1)
 
 if __name__ == '__main__':
