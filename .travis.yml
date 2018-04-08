@@ -13,6 +13,7 @@ matrix:
     - os: osx
 
 script:
+  - curl --silent --show-error https://bootstrap.pypa.io/get-pip.py | sudo python
   - pip install https://github.com/joerick/cibuildwheel/archive/master.zip
   - cibuildwheel --output-dir wheelhouse
   - |
