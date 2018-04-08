@@ -1,3 +1,15 @@
+language: python
+
+matrix:
+  include:
+    - sudo: required
+      services:
+        - docker
+      env: PIP=pip
+    - os: osx
+      language: generic
+      env: PIP=pip2
+
 env:
   global:
     - CIBW_TEST_REQUIRES=nose
@@ -5,16 +17,8 @@ env:
     - TWINE_USERNAME=joerick
     # Note: TWINE_PASSWORD is set in Travis settings
 
-matrix:
-  include:
-    - sudo: required
-      services:
-        - docker
-    - os: osx
-
 script:
-  - curl --silent --show-error https://bootstrap.pypa.io/get-pip.py | sudo python
-  - pip install https://github.com/joerick/cibuildwheel/archive/master.zip
+  - $PIP install https://github.com/joerick/cibuildwheel/archive/master.zip
   - cibuildwheel --output-dir wheelhouse
   - |
     if [[ $TRAVIS_TAG ]]; then
