@@ -2,6 +2,10 @@
 #include <structmember.h>
 #include <frameobject.h>
 
+////////////////////////////
+// Version/Platform shims //
+////////////////////////////
+
 /* Python 2 shim */
 #if PY_MAJOR_VERSION < 3
 
@@ -56,13 +60,90 @@ floatclock(void)
 
 #endif  /* MS_WINDOWS */
 
+///////////////////
+// ProfilerState //
+///////////////////
+
+typedef struct profiler_state {
+    PyObject_HEAD
+    PyObject *target;
+    double interval;
+    double last_invocation;
+} ProfilerState;
+
+static void ProfilerState_SetTarget(ProfilerState *self, PyObject *target) {
+    PyObject *tmp = self->target;
+    Py_XINCREF(target);
+    self->target = target;
+    Py_XDECREF(tmp);
+}
+
+static void ProfilerState_Dealloc(ProfilerState *self) {
+    ProfilerState_SetTarget(self, NULL);
+    Py_TYPE(self)->tp_free(self);
+}
+
+static PyTypeObject ProfilerState_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "pyinstrument_cext.ProfilerState",        /* tp_name */
+    sizeof(ProfilerState),                    /* tp_basicsize */
+    0,                                        /* tp_itemsize */
+    (destructor)ProfilerState_Dealloc,        /* tp_dealloc */
+    0,                                        /* tp_print */
+    0,                                        /* tp_getattr */
+    0,                                        /* tp_setattr */
+    0,                                        /* tp_reserved */
+    0,                                        /* tp_repr */
+    0,                                        /* tp_as_number */
+    0,                                        /* tp_as_sequence */
+    0,                                        /* tp_as_mapping */
+    0,                                        /* tp_hash */
+    0,                                        /* tp_call */
+    0,                                        /* tp_str */
+    0,                                        /* tp_getattro */
+    0,                                        /* tp_setattro */
+    0,                                        /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
+    0,                                        /* tp_doc */
+    0,                                        /* tp_traverse */
+    0,                                        /* tp_clear */
+    0,                                        /* tp_richcompare */
+    0,                                        /* tp_weaklistoffset */
+    0,                                        /* tp_iter */
+    0,                                        /* tp_iternext */
+    0,                                        /* tp_methods */
+    0,                                        /* tp_members */
+    0,                                        /* tp_getset */
+    0,                                        /* tp_base */
+    0,                                        /* tp_dict */
+    0,                                        /* tp_descr_get */
+    0,                                        /* tp_descr_set */
+    0,                                        /* tp_dictoffset */
+    0,                                        /* tp_init */
+    PyType_GenericAlloc,                      /* tp_alloc */
+    PyType_GenericNew,                        /* tp_new */
+    PyObject_Del,                             /* tp_free */
+};
+
+static ProfilerState *ProfilerState_New(void) {
+    ProfilerState *op = PyObject_New(ProfilerState, &ProfilerState_Type);
+    op->target = NULL;
+    op->interval = 0.0;
+    op->last_invocation = 0.0;
+    return op;
+}
+
+////////////////////////
+// Internal functions //
+////////////////////////
+
 static PyObject *whatstrings[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
 static int
 trace_init(void)
 {
     static char *whatnames[7] = {"call", "exception", "line", "return",
-                                    "c_call", "c_exception", "c_return"};
+                                 "c_call", "c_exception", "c_return"};
     PyObject *name;
     int i;
     for (i = 0; i < 7; ++i) {
@@ -76,24 +157,9 @@ trace_init(void)
     return 0;
 }
 
-struct module_state {
-    PyObject *target;
-    double interval;
-    double last_invocation;
-};
-
-#if PY_MAJOR_VERSION >= 3
-#define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
-#else
-#define GETSTATE(m) (&_state)
-static struct module_state _state;
-#endif
-
 static PyObject *
-call_target(PyObject* m, PyFrameObject *frame, int what, PyObject *arg)
+call_target(ProfilerState *pState, PyFrameObject *frame, int what, PyObject *arg)
 {
-    struct module_state *mState = GETSTATE(m);
-
     PyObject *args;
     PyObject *whatstr;
     PyObject *result;
@@ -118,7 +184,7 @@ call_target(PyObject* m, PyFrameObject *frame, int what, PyObject *arg)
     PyTuple_SET_ITEM(args, 2, arg);
 
     /* call the Python-level target function */
-    result = PyEval_CallObject(mState->target, args);
+    result = PyEval_CallObject(pState->target, args);
 
     PyFrame_LocalsToFast(frame, 1);
     if (result == NULL)
@@ -129,20 +195,28 @@ call_target(PyObject* m, PyFrameObject *frame, int what, PyObject *arg)
     return result;
 }
 
+//////////////////////
+// Public functions //
+//////////////////////
+
+/**
+ * The profile function. Passed to PyEval_SetProfile, and called with 
+ * function frames as the program executes by Python 
+ */
 static int
-profile(PyObject *m, PyFrameObject *frame, int what, PyObject *arg)
+profile(PyObject *op, PyFrameObject *frame, int what, PyObject *arg)
 {
     double now = floatclock();
-    struct module_state *mState = GETSTATE(m);
+    ProfilerState *pState = (ProfilerState *)op;
     PyObject *result;
 
-    if (now < mState->last_invocation + mState->interval) {
+    if (now < pState->last_invocation + pState->interval) {
         return 0;
     } else {
-        mState->last_invocation = now;
+        pState->last_invocation = now;
     }
 
-    result = call_target(m, frame, what, arg);
+    result = call_target(pState, frame, what, arg);
 
     if (result == NULL) {
         PyEval_SetProfile(NULL, NULL);
@@ -153,14 +227,17 @@ profile(PyObject *m, PyFrameObject *frame, int what, PyObject *arg)
     return 0;
 }
 
+/**
+ * The 'setprofile' function. This is the public API that can be called
+ * from Python code.
+ */
 static PyObject *
 setstatprofile(PyObject *m, PyObject *args, PyObject *kwds)
 {
     static char *kwlist[] = {"target", "interval", NULL};
-    struct module_state *mState = GETSTATE(m);
+    ProfilerState *pState = NULL;
     double interval = 0.0;
     PyObject *target = NULL;
-    PyObject *tmp;
     
     if (! PyArg_ParseTupleAndKeywords(args, kwds, "O|d", kwlist, &target, &interval))
         return NULL;
@@ -168,24 +245,23 @@ setstatprofile(PyObject *m, PyObject *args, PyObject *kwds)
     if (target == Py_None) 
         target = NULL;
 
-    if (target && !PyCallable_Check(target)) {
-        PyErr_SetString(PyExc_TypeError, "target must be callable");
-        return NULL;
-    }
-
-    tmp = mState->target;
-    Py_XINCREF(target);
-    mState->target = target;
-    Py_XDECREF(tmp);
-
-    // default interval is 1 ms
-    mState->interval = (interval > 0) ? interval : 0.001;
-
     if (target) {
+        if (!PyCallable_Check(target)) {
+            PyErr_SetString(PyExc_TypeError, "target must be callable");
+            return NULL;
+        }
+
         if (trace_init() == -1)
             return NULL;
+        
+        pState = ProfilerState_New();
+        ProfilerState_SetTarget(pState, target);
 
-        PyEval_SetProfile(profile, m);
+        // default interval is 1 ms
+        pState->interval = (interval > 0) ? interval : 0.001;
+
+        PyEval_SetProfile(profile, (PyObject *)pState);
+        Py_DECREF(pState);
     } else {
         PyEval_SetProfile(NULL, NULL);
     }
@@ -193,9 +269,9 @@ setstatprofile(PyObject *m, PyObject *args, PyObject *kwds)
     Py_RETURN_NONE;
 }
 
-/*
-    Module initialization
-*/
+///////////////////////////
+// Module initialization //
+///////////////////////////
 
 #if PY_MAJOR_VERSION >= 3
     #define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
@@ -227,7 +303,7 @@ MOD_INIT(pyinstrument_cext)
             "pyinstrument_cext", 
             "Module that implements the backend to a statistical profiler", 
             module_methods,
-            sizeof(struct module_state))
+            0)
 
     MOD_RETURN(m)
 }
