@@ -72,8 +72,10 @@ typedef struct profiler_state {
 } ProfilerState;
 
 static void ProfilerState_SetTarget(ProfilerState *self, PyObject *target) {
+    PyObject *tmp = self->target;
     Py_XINCREF(target);
-    Py_XSETREF(self->target, target);
+    self->target = target;
+    Py_XDECREF(tmp);
 }
 
 static void ProfilerState_Dealloc(ProfilerState *self) {
