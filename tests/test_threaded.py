@@ -36,7 +36,7 @@ class TestThreaded(TestCase):
         for thread in threads:
             thread.join()
         
-        # threaded counts are way lower, presumably due to the GIL.
+        # threaded counts can be way lower, presumably due to the GIL.
         # Really we only care that it didn't crash!
-        self.assertTrue(50 < self.count < 105,
+        self.assertTrue(50 < self.count < 125,
                 'profile count should be approx. 100, was %i' % self.count)
