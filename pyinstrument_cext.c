@@ -1,4 +1,10 @@
-#include <Python.h>
+#ifdef _DEBUG
+  #undef _DEBUG
+  #include <Python.h>
+  #define _DEBUG
+#else
+  #include <Python.h>
+#endif
 #include <structmember.h>
 #include <frameobject.h>
 
