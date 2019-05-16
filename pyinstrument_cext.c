@@ -260,6 +260,9 @@ setstatprofile(PyObject *m, PyObject *args, PyObject *kwds)
         // default interval is 1 ms
         pState->interval = (interval > 0) ? interval : 0.001;
 
+        // initialise the last invocation to avoid immediate callback
+        pState->last_invocation = floatclock();
+
         PyEval_SetProfile(profile, (PyObject *)pState);
         Py_DECREF(pState);
     } else {
