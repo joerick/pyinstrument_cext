@@ -18,7 +18,7 @@ than every `interval` seconds with the current stack.
 Changelog
 ---------
 
-### 0.2.1
+### 0.2.2
 
 - Avoid the immediate callback to the profiler function, setstatprofile
   now waits for `interval` before calling the function.
