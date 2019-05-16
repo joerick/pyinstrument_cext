@@ -18,10 +18,11 @@ env:
     # Note: TWINE_PASSWORD is set in Travis settings
 
 script:
-  - sudo $PIP install https://github.com/joerick/cibuildwheel/archive/master.zip twine
-  - sudo $PIP install six>=1.9.0 # seems to be required because pip can't resolve twine's dependencies?
+  - $PIP install https://github.com/joerick/cibuildwheel/archive/master.zip
+  - $PIP install six>=1.9.0 # seems to be required because pip can't resolve twine's dependencies?
   - cibuildwheel --output-dir wheelhouse
   - |
     if [[ $TRAVIS_TAG ]]; then
-      twine upload wheelhouse/*.whl
+      python -m pip install twine
+      python -m twine upload wheelhouse/*.whl
     fi
