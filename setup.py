@@ -4,7 +4,7 @@ import sys
 setup(
     name="pyinstrument_cext",
     ext_modules=[Extension('pyinstrument_cext', sources=['pyinstrument_cext.c'])],
-    version="0.2.1",
+    version="0.2.2",
     description="A CPython extension supporting pyinstrument",
     author='Joe Rickerby',
     author_email='joerick@mac.com',
