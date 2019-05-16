@@ -18,6 +18,11 @@ than every `interval` seconds with the current stack.
 Changelog
 ---------
 
+### 0.2.1
+
+- Avoid the immediate callback to the profiler function, setstatprofile
+  now waits for `interval` before calling the function.
+
 ### 0.2.0
 
 - Add support for multi-threading. Profiling sessions are per-thread, and they
