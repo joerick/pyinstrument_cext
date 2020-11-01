@@ -18,6 +18,10 @@ than every `interval` seconds with the current stack.
 Changelog
 ---------
 
+### 0.2.3
+
+- Build wheels for Python 3.8 and Python 3.9
+
 ### 0.2.2
 
 - Avoid the immediate callback to the profiler function, setstatprofile
