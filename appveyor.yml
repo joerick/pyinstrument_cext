@@ -6,7 +6,7 @@ environment:
     # Note: TWINE_PASSWORD is set in Appveyor settings
 
 build_script:
-  - pip install https://github.com/joerick/cibuildwheel/archive/master.zip
+  - pip install cibuildwheel
   - cibuildwheel --output-dir wheelhouse
   - ps: >-
       if ($env:APPVEYOR_REPO_TAG -eq "true") {

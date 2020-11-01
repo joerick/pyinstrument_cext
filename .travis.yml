@@ -18,7 +18,7 @@ env:
     # Note: TWINE_PASSWORD is set in Travis settings
 
 script:
-  - $PIP install https://github.com/joerick/cibuildwheel/archive/master.zip
+  - $PIP install cibuildwheel
   - cibuildwheel --output-dir wheelhouse
   - |
     if [[ $TRAVIS_TAG ]]; then
