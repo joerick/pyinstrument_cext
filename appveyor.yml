@@ -1,5 +1,6 @@
 environment:
   global:
+    CIBW_SKIP: pp*
     CIBW_TEST_REQUIRES: nose
     CIBW_TEST_COMMAND: "nosetests {project}\\tests"
     TWINE_USERNAME: joerick
