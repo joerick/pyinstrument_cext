@@ -13,10 +13,14 @@ instead of being called every on every call and return, the function is throttle
 than every `interval` seconds with the current stack.
 
 [1]: https://github.com/joerick/pyinstrument
-[2]: https://docs.python.org/2/library/sys.html#sys.setprofile
+[2]: https://docs.python.org/3/library/sys.html#sys.setprofile
 
 Changelog
 ---------
+
+### 0.2.3
+
+- Build wheels for Python 3.8 and Python 3.9
 
 ### 0.2.2
 

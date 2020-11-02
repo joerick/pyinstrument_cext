@@ -12,13 +12,14 @@ matrix:
 
 env:
   global:
+    - CIBW_SKIP=pp*
     - CIBW_TEST_REQUIRES=nose
     - CIBW_TEST_COMMAND="nosetests {project}/tests"
     - TWINE_USERNAME=joerick
     # Note: TWINE_PASSWORD is set in Travis settings
 
 script:
-  - $PIP install https://github.com/joerick/cibuildwheel/archive/master.zip
+  - $PIP install cibuildwheel
   - cibuildwheel --output-dir wheelhouse
   - |
     if [[ $TRAVIS_TAG ]]; then
