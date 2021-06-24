@@ -5,11 +5,19 @@ on: [push, pull_request]
 
 jobs:
   build_wheels:
-    name: Build wheels on ${{ matrix.os }}
+    name: Build wheels on ${{ matrix.archs }} for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-18.04, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-18.04
+            archs: auto
+          - os: ubuntu-18.04
+            archs: aarch64
+          - os: windows-latest
+            archs: auto
+          - os: macos-latest
+            archs: auto universal2
 
     steps:
       - uses: actions/checkout@v2
@@ -19,16 +27,19 @@ jobs:
         with:
           python-version: '3.9'
 
+      - name: Set up QEMU
+        if: ${{ matrix.archs == 'aarch64' }}
+        uses: docker/setup-qemu-action@v1
+
       - name: Install Visual C++ for Python 2.7
         if: runner.os == 'Windows'
         run: |
           choco install vcpython27 -f -y
-
       - name: Build wheels
         uses: joerick/cibuildwheel@v1.9.0
         env:
           CIBW_SKIP: pp*
-          CIBW_ARCHS_MACOS: auto universal2
+          CIBW_ARCHS: ${{matrix.archs}}
           CIBW_TEST_REQUIRES: nose
           CIBW_TEST_COMMAND: "nosetests {project}/tests"
 
