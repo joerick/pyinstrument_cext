@@ -19,13 +19,8 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install Visual C++ for Python 2.7
-        if: runner.os == 'Windows'
-        run: |
-          choco install vcpython27 -f -y
-
       - name: Build wheels
-        uses: joerick/cibuildwheel@v1.9.0
+        uses: joerick/cibuildwheel@main
         env:
           CIBW_SKIP: pp*
           CIBW_ARCHS_MACOS: auto universal2
