@@ -20,7 +20,7 @@ jobs:
           python-version: '3.9'
 
       - name: Build wheels
-        uses: joerick/cibuildwheel@master
+        uses: joerick/cibuildwheel@main
         env:
           CIBW_SKIP: pp*
           CIBW_ARCHS_MACOS: auto universal2
