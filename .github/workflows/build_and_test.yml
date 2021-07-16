@@ -25,7 +25,7 @@ jobs:
           choco install vcpython27 -f -y
 
       - name: Build wheels
-        uses: joerick/cibuildwheel@v1.9.0
+        uses: joerick/cibuildwheel@v2.0.0b2
         env:
           CIBW_SKIP: pp*
           CIBW_ARCHS_MACOS: auto universal2
