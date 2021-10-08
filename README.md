@@ -3,6 +3,8 @@ pyinstrument_cext
 
 [Pyinstrument][1]'s C extensions - reducing the overhead of statistical profilers.
 
+**Note**: Since Pyinstrument 4.0, this library has been folded into pyinstrument.
+
 API
 ---
 
